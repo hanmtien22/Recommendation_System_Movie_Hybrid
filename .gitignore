@@ -1,0 +1,14 @@
+# Chặn toàn bộ dữ liệu và mô hình đã lưu
+data/
+models/*.pkl
+
+# Chặn cache của Python
+__pycache__/
+*.pyc
+
+# Chặn môi trường ảo (nếu có)
+venv/
+.venv/
+
+# Chặn file cấu hình Jupyter
+.ipynb_checkpoints/

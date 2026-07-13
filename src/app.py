@@ -2,7 +2,7 @@ import re
 import textwrap
 import pandas as pd
 import streamlit as st
-from data_loader import load_data, load_models
+from src.data_loader import load_data, load_models
 from recommender import MovieRecommender
 
 
