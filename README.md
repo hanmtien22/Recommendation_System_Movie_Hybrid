@@ -23,7 +23,7 @@
 - [Kết quả thực nghiệm](#-kết-quả-thực-nghiệm)
 - [Cài đặt](#-cài-đặt)
 - [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
-- [Cấu trúc dự án](#-cấu-trúc-dự án)
+- [Cấu trúc dự án](#-cấu-trúc-dự-án)
 - [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
 
 ---
