@@ -3,7 +3,7 @@ import textwrap
 import pandas as pd
 import streamlit as st
 from src.data_loader import load_data, load_models
-from recommender import MovieRecommender
+from src.recommender import MovieRecommender
 
 
 st.set_page_config(page_title="Hybrid Movie Recommendation", layout="wide")
