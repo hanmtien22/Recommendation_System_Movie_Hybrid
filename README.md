@@ -9,19 +9,20 @@ Hệ thống khuyến nghị phim kết hợp (Hybrid) sử dụng các phương
 - **Giao diện Real-time:** Đóng gói mô hình tĩnh (Artifacts serialization) và deploy ứng dụng web gợi ý thời gian thực.
 
 ## Kết quả thực nghiệm (Evaluation)
-Hệ thống được đánh giá dựa trên các chỉ số RMSE, MAE, Precision@K. Kết quả so sánh giữa các mô hình:
+Hệ thống được đánh giá dựa trên các chỉ số định lượng sau khi chạy pipeline thử nghiệm:
 
 | Mô hình | Precision@K | Recall@K | NDCG@K |
-| ALS implicit| 0.08325 | 0.526456 | 0.337205 |
-| Logistic blender| 0.08325 | 0.526012 | 0.331105 |
+| :--- | :---: | :---: | :---: |
+| ALS implicit | 0.08325 | 0.526456 | 0.337205 |
+| Logistic blender | 0.08325 | 0.526012 | 0.331105 |
 | BPR | 0.07175 | 0.378576 | 0.260644 |
 | MF | 0.04050 | 0.193564 | 0.140479 |
-| CBF| 0.01950 | 0.115268 | 0.079145 |
+| CBF | 0.01950 | 0.115268 | 0.079145 |
 | Popularity-Based | 0.05225 | 0.261312 | 0.191665 |
 | Item-KNN baseline | 0.07925 | 0.424347 | 0.297547 |
-| User-KNN baseline| 0.07675 | 0.422207 | 0.298856 |
-| Random baseline | 0.00425	 | 0.018477 | 0.010052 |
-| Bias-only baseline | 0.04875 | 0.239451 | 0.175805 |
+| User-KNN baseline | 0.07675 | 0.422207 | 0.298856 |
+| Random baseline | 0.00425 | 0.018477 | 0.010052 |
+| Bias-only baseline | 0.040875 | 0.239451 | 0.175805 |
 | **Hybrid Model (Đề xuất)** | **0.08800** | **0.541267** | **0.361113** |
 
 ## Hướng dẫn cài đặt & Chạy Local
@@ -38,10 +39,11 @@ pip install -r requirements.txt
 streamlit run src/app.py
 ```
 ### 3. Cấu trúc thư mục dự án 
-├── data/                  # Thư mục chứa dữ liệu gốc (.csv)
-├── models/                # Lưu trữ trọng số mô hình sau khi train (.pkl)
+```text
+├── data/                  # Thư mục chứa dữ liệu gốc (.csv) - [Đã ignore]
+├── models/                # Lưu trữ trọng số mô hình sau khi train (.pkl) - [Đã ignore]
 ├── notebooks/             # Thử nghiệm thuật toán & phân tích dữ liệu (EDA)
-├── src/                   # Mã nguồn xử lý chính (DataLoader, Evaluation, Recommender)
+├── src/                   # Mã nguồn module xử lý chính (DataLoader, Evaluation, Recommender)
 ├── app.py                 # File chạy ứng dụng giao diện Streamlit
 ├── requirements.txt       # Danh sách thư viện bắt buộc
-└── README.md              # Tài liệu dự án
+└── README.md              # Tài liệu hướng dẫn dự án
