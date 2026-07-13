@@ -24,7 +24,6 @@
 - [Cài đặt](#-cài-đặt)
 - [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
 - [Cấu trúc dự án](#-cấu-trúc-dự-án)
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
 
 ---
 
@@ -227,28 +226,44 @@ pip install -r requirements.txt
 
 ### Bước 4: Chuẩn bị dữ liệu
 
+**Nếu bạn chưa có dữ liệu:**
+
 1. Tải dữ liệu từ:
    - MovieLens: https://grouplens.org/datasets/movielens/
    - TMDB: https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata
 
-2. Tạo thư mục và đặt dữ liệu:
+2. Sao chép các file vào thư mục `data/`:
    ```bash
    mkdir -p data
-   # Sao chép các file .csv vào data/
+   # Đặt các file .csv vào thư mục data/
+   ls data/  # Kiểm tra các file
    ```
 
-3. Chạy preprocessing (nếu cần):
-   ```bash
-   python src/data_loader.py
-   ```
+3. **Nếu bạn đã có dữ liệu xử lý** (như trong dự án):
+   - Các file đã được xử lý sẵn trong `data/`
+   - `final_ratings_processed.csv` và `movie_meta_processed.csv` đã sẵn sàng sử dụng
+   - Không cần preprocessing thêm
 
-### Bước 5: Huấn luyện mô hình (Tùy chọn)
+### Bước 5: Tải mô hình (Nếu chưa có)
 
+**Nếu bạn chưa huấn luyện mô hình:**
+
+Chạy Jupyter notebook để huấn luyện:
 ```bash
-python notebooks/train_models.py
+jupyter notebook notebook/Hybrid_Recommendation_Movie.ipynb
 ```
 
-Mô hình đã huấn luyện sẽ được lưu vào thư mục `models/`
+Hoặc chạy từ terminal:
+```bash
+python -c "from notebook.Hybrid_Recommendation_Movie import *; train_models()"
+```
+
+Mô hình sẽ được lưu vào `models/`:
+- `svd_model.pkl`
+- `tfidf_vectorizer.pkl`
+- `content_features.pkl`
+- `blend_model.pkl`
+- Và các file khác...
 
 ---
 
@@ -275,10 +290,28 @@ streamlit run src/app.py
 ### Sử dụng API lập trình
 
 ```python
+import pickle
 from src.recommender import HybridRecommender
 
-# Khởi tạo recommender
+# Tải các mô hình đã huấn luyện
+with open('models/svd_model.pkl', 'rb') as f:
+    svd_model = pickle.load(f)
+
+with open('models/tfidf_vectorizer.pkl', 'rb') as f:
+    tfidf_vectorizer = pickle.load(f)
+
+with open('models/content_features.pkl', 'rb') as f:
+    content_features = pickle.load(f)
+
+with open('models/blend_model.pkl', 'rb') as f:
+    blend_model = pickle.load(f)
+
+# Khởi tạo Hybrid Recommender
 recommender = HybridRecommender(
+    svd_model=svd_model,
+    tfidf_vectorizer=tfidf_vectorizer,
+    content_features=content_features,
+    blend_model=blend_model,
     cf_weight=0.4,
     cbf_weight=0.3,
     pop_weight=0.3
@@ -288,11 +321,33 @@ recommender = HybridRecommender(
 recommendations = recommender.recommend(
     user_id=1,
     k=10,
-    method='hybrid'
+    method='hybrid'  # 'cf', 'cbf', 'popularity', 'hybrid'
 )
 
-# Kết quả: DataFrame với columns [movie_id, title, score]
+# Kết quả: DataFrame với columns [movie_id, title, score, genres, rating]
 print(recommendations)
+print(f"Top recommendation: {recommendations.iloc[0]['title']}")
+```
+
+### Ví dụ nâng cao
+
+```python
+# Collaborative Filtering
+cf_recommendations = recommender.recommend(user_id=1, k=10, method='cf')
+
+# Content-Based Filtering
+cbf_recommendations = recommender.recommend(user_id=1, k=10, method='cbf')
+
+# Popularity-Based
+pop_recommendations = recommender.recommend(user_id=1, k=10, method='popularity')
+
+# Hybrid (Recommended)
+hybrid_recommendations = recommender.recommend(user_id=1, k=10, method='hybrid')
+
+# So sánh các phương pháp
+print("CF Score:", cf_recommendations.iloc[0]['score'])
+print("CBF Score:", cbf_recommendations.iloc[0]['score'])
+print("Hybrid Score:", hybrid_recommendations.iloc[0]['score'])
 ```
 
 ---
@@ -303,38 +358,67 @@ print(recommendations)
 hybrid-movie-recommendation/
 │
 ├── 📂 data/                              # Thư mục dữ liệu [.gitignore]
-│   ├── ratings.csv                       # MovieLens ratings
-│   ├── movies_metadata.csv               # TMDB metadata
-│   └── keywords.csv                      # TMDB keywords
+│   ├── .gitkeep
+│   ├── final_ratings_processed.csv       # Dữ liệu ratings đã xử lý
+│   ├── links.csv                         # Links giữa MovieLens và IMDB
+│   ├── movie_meta_processed.csv          # Metadata phim đã xử lý
+│   ├── movies.csv                        # Danh sách phim gốc
+│   ├── ratings.csv                       # Đánh giá gốc từ MovieLens
+│   ├── tmdb_5000_credits.csv             # Credits từ TMDB
+│   └── tmdb_5000_movies.csv              # Metadata từ TMDB
 │
-├── 📂 models/                            # Thư mục lưu trữ mô hình [.gitignore]
-│   ├── svd_model.pkl                     # Mô hình SVD đã huấn luyện
-│   ├── tfidf_vectorizer.pkl              # TF-IDF vectorizer
-│   ├── similarity_matrix.pkl              # Ma trận similarity
-│   └── blender_model.pkl                 # Logistic blender
+├── 📂 models/                            # Lưu trữ mô hình đã huấn luyện [.gitignore]
+│   ├── .gitkeep
+│   ├── blend_model.pkl                   # Logistic blender model
+│   ├── content_features.pkl              # Đặc trưng nội dung
+│   ├── hybrid_config.pkl                 # Cấu hình hybrid
+│   ├── mappings.pkl                      # Ánh xạ user/movie IDs
+│   ├── popularity_table.pkl              # Bảng xếp hạng phổ biến
+│   ├── svd_model.pkl                     # Mô hình SVD
+│   └── tfidf_vectorizer.pkl              # TF-IDF vectorizer
 │
-├── 📂 notebooks/                         # Thử nghiệm & phân tích
-│   ├── eda.ipynb                         # Exploratory Data Analysis
-│   ├── collaborative_filtering.ipynb     # Thử nghiệm CF
-│   ├── content_based_filtering.ipynb     # Thử nghiệm CBF
-│   ├── hybrid_approach.ipynb              # Thử nghiệm Hybrid
-│   └── evaluation.ipynb                  # Đánh giá mô hình
+├── 📂 notebook/                          # Thử nghiệm & phân tích
+│   └── Hybrid_Recommendation_Movie.ipynb # Notebook huấn luyện & đánh giá
 │
 ├── 📂 src/                               # Mã nguồn chính
-│   ├── __init__.py
 │   ├── app.py                            # Ứng dụng Streamlit
 │   ├── data_loader.py                    # Tải và xử lý dữ liệu
-│   ├── collaborative_filtering.py        # Mô hình CF
-│   ├── content_based_filtering.py        # Mô hình CBF
-│   ├── popularity_based.py               # Mô hình Popularity
-│   ├── recommender.py                    # Hybrid recommender
-│   └── evaluation.py                     # Metrics đánh giá
+│   ├── evaluation.py                     # Metrics & đánh giá
+│   └── recommender.py                    # Hybrid recommender engine
 │
-├── 📄 requirements.txt                   # Thư viện phụ thuộc
-├── 📄 .gitignore                         # Ignore files
+├── 📄 .gitignore                         # Ignore files (data/, models/)
 ├── 📄 README.md                          # Tài liệu này
+├── 📄 requirements.txt                   # Thư viện phụ thuộc
 └── 📄 LICENSE                            # MIT License
 
+```
+
+### 📝 Mô tả chi tiết các thư mục
+
+#### `data/` - Dữ liệu
+- **final_ratings_processed.csv** - Dữ liệu ratings đã được làm sạch và xử lý
+- **movie_meta_processed.csv** - Metadata phim (genres, cast, crew, keywords) đã xử lý
+- **tmdb_5000_movies.csv & tmdb_5000_credits.csv** - Nguồn dữ liệu gốc từ TMDB
+- **ratings.csv & movies.csv** - Nguồn dữ liệu gốc từ MovieLens
+- **links.csv** - Ánh xạ giữa MovieLens và TMDB IDs
+
+#### `models/` - Mô hình đã huấn luyện
+- **svd_model.pkl** - Mô hình SVD cho Collaborative Filtering
+- **tfidf_vectorizer.pkl** - Vectorizer TF-IDF cho Content-Based Filtering
+- **content_features.pkl** - Ma trận đặc trưng phim
+- **popularity_table.pkl** - Bảng xếp hạng và điểm phổ biến
+- **blend_model.pkl** - Logistic regression blender
+- **hybrid_config.pkl** - Cấu hình và trọng số hybrid
+- **mappings.pkl** - Ánh xạ giữa user/movie IDs
+
+#### `notebook/` - Thử nghiệm
+- **Hybrid_Recommendation_Movie.ipynb** - Notebook toàn bộ quá trình: EDA, huấn luyện, đánh giá
+
+#### `src/` - Mã nguồn
+- **app.py** - Giao diện Streamlit cho người dùng
+- **data_loader.py** - Module tải và xử lý dữ liệu
+- **recommender.py** - Recommender engine chính (CF, CBF, Hybrid)
+- **evaluation.py** - Hàm đánh giá (Precision@K, Recall@K, NDCG@K)
 ```
 
 ---
@@ -388,37 +472,196 @@ NDCG@K = DCG@K / IDCG@K
 
 ## 🔄 Pipeline xử lý
 
+### Quá trình huấn luyện (Training Pipeline)
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    RAW DATA                                  │
-│         (MovieLens + TMDB datasets)                          │
-└────────────┬────────────────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  DATA PREPROCESSING                          │
-│     (Cleaning, Merging, Feature Engineering)                 │
-└────────────┬────────────────────────────────────────────────┘
-             │
-    ┌────────┼────────┬────────────┐
-    ▼        ▼        ▼            ▼
-┌────────┬────────┬────────┬──────────────┐
-│   CF   │  CBF   │  POP   │  HYBRID      │
-│ Module │ Module │ Module │  BLENDER     │
-└────────┴────────┴────────┴──────────────┘
-    │        │        │            │
-    └────────┼────────┼────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│              MODEL SERIALIZATION (.pkl)                      │
-└────────────┬────────────────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│           STREAMLIT INTERFACE                                │
-│      (Real-time Recommendations)                             │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│            RAW DATA (data/)                               │
+│  • MovieLens (ratings.csv, movies.csv)                   │
+│  • TMDB (tmdb_5000_movies.csv, tmdb_5000_credits.csv)   │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│         DATA PREPROCESSING (data_loader.py)              │
+│  • Merging datasets                                      │
+│  • Cleaning & Feature Engineering                        │
+│  • Creating processed files                              │
+└──────────────┬───────────────────────────────────────────┘
+               │
+    ┌──────────┼──────────┬──────────────┐
+    ▼          ▼          ▼              ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌──────────────┐
+│  SVD   │ │ TF-IDF │ │  POP   │ │   BLEND      │
+│   CF   │ │  CBF   │ │ SCORER │ │  OPTIMIZER   │
+└────────┘ └────────┘ └────────┘ └──────────────┘
+    │          │          │              │
+    └──────────┼──────────┼──────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│         MODEL SERIALIZATION (models/)                     │
+│  • svd_model.pkl                                         │
+│  • tfidf_vectorizer.pkl                                  │
+│  • content_features.pkl                                  │
+│  • popularity_table.pkl                                  │
+│  • blend_model.pkl                                       │
+│  • mappings.pkl & hybrid_config.pkl                      │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│       EVALUATION (evaluation.py)                          │
+│  • Precision@K, Recall@K, NDCG@K                         │
+│  • Cross-validation                                      │
+└──────────────┬───────────────────────────────────────────┘
+```
+
+### Quá trình sử dụng (Inference Pipeline)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        USER REQUEST (via Streamlit)                       │
+│  • User ID                                               │
+│  • Method (CF / CBF / Hybrid)                             │
+│  • Number of recommendations (K)                          │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│      LOAD PRETRAINED MODELS (recommender.py)             │
+│  • Load .pkl files from models/                          │
+│  • Initialize recommender                                │
+└──────────────┬───────────────────────────────────────────┘
+               │
+    ┌──────────┼──────────┬──────────────┐
+    ▼          ▼          ▼              ▼
+┌────────┐ ┌────────┐ ┌────────┐ ┌──────────────┐
+│ SVD    │ │TF-IDF  │ │ Popular│ │ WEIGHTED AVG │
+│Predict │ │Search  │ │ Ranking│ │   BLENDING   │
+└────────┘ └────────┘ └────────┘ └──────────────┘
+    │          │          │              │
+    └──────────┼──────────┼──────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│       SCORE AGGREGATION (recommender.py)                 │
+│  • Combine scores: s_hybrid = w_cf*s_cf +                │
+│                    w_cbf*s_cbf + w_pop*s_pop             │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│      TOP-K RANKING & FILTERING                           │
+│  • Sort by final score                                   │
+│  • Remove duplicates                                     │
+│  • Return top-K movies                                   │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│         STREAMLIT UI (app.py)                            │
+│  • Display recommendations                               │
+│  • Show scores & movie details                           │
+│  • Interactive interface                                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📄 Mô tả chi tiết các module trong `src/`
+
+### `app.py` - Giao diện Streamlit
+Ứng dụng web interactif cho người dùng cuối.
+
+**Tính năng:**
+- Chọn User ID từ dropdown
+- Lựa chọn phương pháp: CF, CBF, Popularity, hoặc Hybrid
+- Điều chỉnh số lượng gợi ý (K)
+- Hiển thị danh sách phim được gợi ý
+- Thông tin chi tiết phim (title, genres, rating, score)
+
+**Chạy ứng dụng:**
+```bash
+streamlit run src/app.py
+```
+
+### `data_loader.py` - Tải & xử lý dữ liệu
+Module xử lý dữ liệu từ các nguồn khác nhau.
+
+**Chức năng chính:**
+```python
+load_movielens_data()      # Tải dữ liệu MovieLens
+load_tmdb_data()           # Tải dữ liệu TMDB
+merge_datasets()           # Merge các dataset
+preprocess_data()          # Làm sạch & xử lý
+create_user_item_matrix()  # Tạo ma trận interactions
+```
+
+**Ví dụ sử dụng:**
+```python
+from src.data_loader import load_movielens_data, load_tmdb_data
+
+ratings_df = load_movielens_data('data/ratings.csv')
+movies_df = load_tmdb_data('data/tmdb_5000_movies.csv')
+```
+
+### `recommender.py` - Engine khuyến nghị chính
+Lõi của hệ thống với ba phương pháp khuyến nghị.
+
+**Các lớp chính:**
+
+```python
+class CollaborativeFiltering:
+    """SVD-based Collaborative Filtering"""
+    def __init__(self, svd_model)
+    def recommend(user_id, k=10)
+    
+class ContentBasedFiltering:
+    """TF-IDF + Cosine Similarity"""
+    def __init__(self, tfidf_vectorizer, content_features)
+    def recommend(user_id, k=10)
+    
+class PopularityBased:
+    """Dựa trên đánh giá trung bình"""
+    def __init__(self, popularity_table)
+    def recommend(k=10)
+    
+class HybridRecommender:
+    """Kết hợp cả ba phương pháp"""
+    def __init__(self, cf_weight=0.4, cbf_weight=0.3, pop_weight=0.3)
+    def recommend(user_id, k=10, method='hybrid')
+    def blend_scores(cf_score, cbf_score, pop_score)
+```
+
+**Ví dụ:**
+```python
+from src.recommender import HybridRecommender
+
+recommender = HybridRecommender()
+result = recommender.recommend(user_id=42, k=10, method='hybrid')
+```
+
+### `evaluation.py` - Đánh giá mô hình
+Module tính toán các chỉ số đánh giá.
+
+**Hàm chính:**
+```python
+precision_at_k(recommendations, ground_truth, k=10)
+recall_at_k(recommendations, ground_truth, k=10)
+ndcg_at_k(recommendations, ground_truth, k=10)
+
+# Đánh giá toàn bộ
+evaluate_recommender(recommender, test_ratings, k=10)
+```
+
+**Ví dụ:**
+```python
+from src.evaluation import precision_at_k, recall_at_k, ndcg_at_k
+
+# Tính Precision@10
+prec = precision_at_k(pred_ratings, true_ratings, k=10)
+print(f"Precision@10: {prec:.4f}")
 ```
 
 ---
@@ -433,5 +676,126 @@ NDCG@K = DCG@K / IDCG@K
 ✅ **Có tài liệu:** Notebooks chi tiết cho mỗi bước  
 ✅ **Dễ mở rộng:** Kiến trúc modular cho các thuật toán mới  
 
+---
 
+## 🔧 Troubleshooting & FAQ
+
+### ❓ Vấn đề: Import module không tìm thấy
+
+**Lỗi:**
+```
+ModuleNotFoundError: No module named 'src'
+```
+
+**Giải pháp:**
+```bash
+# Đảm bảo bạn ở thư mục gốc của dự án
+cd /path/to/hybrid-movie-recommendation
+
+# Thêm thư mục gốc vào PYTHONPATH
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+
+# Hoặc chạy từ thư mục gốc
+python -m streamlit run src/app.py
+```
+
+### ❓ Vấn đề: File .pkl không tìm thấy
+
+**Lỗi:**
+```
+FileNotFoundError: [Errno 2] No such file or directory: 'models/svd_model.pkl'
+```
+
+**Giải pháp:**
+1. Kiểm tra thư mục `models/` có tồn tại không
+2. Chạy notebook để huấn luyện mô hình:
+   ```bash
+   jupyter notebook notebook/Hybrid_Recommendation_Movie.ipynb
+   ```
+3. Hoặc tải mô hình đã huấn luyện từ:
+   - [Link Google Drive / Dropbox tùy vào bạn]
+
+### ❓ Vấn đề: Lỗi import pandas/numpy/sklearn
+
+**Giải pháp:**
+```bash
+# Cập nhật pip
+pip install --upgrade pip
+
+# Cài đặt lại tất cả dependencies
+pip install -r requirements.txt --upgrade
+
+# Hoặc cài riêng
+pip install pandas numpy scikit-learn scipy streamlit surprise implicit
+```
+
+### ❓ Vấn đề: Streamlit port đã được sử dụng
+
+**Lỗi:**
+```
+Error: Addressalreadyinuse[Errno 48]
+```
+
+**Giải pháp:**
+```bash
+# Chạy trên port khác
+streamlit run src/app.py --server.port 8502
+
+# Hoặc kill process sử dụng port 8501
+lsof -ti:8501 | xargs kill -9  # macOS/Linux
+netstat -ano | findstr :8501   # Windows
+```
+
+### ❓ Vấn đề: Memory không đủ khi xử lý dữ liệu lớn
+
+**Giải pháp:**
+```python
+# Trong data_loader.py, sử dụng chunking
+df = pd.read_csv('data/ratings.csv', chunksize=100000)
+
+# Hoặc giới hạn số lượng records
+df = pd.read_csv('data/ratings.csv', nrows=1000000)
+
+# Sử dụng data type optimal
+df['user_id'] = df['user_id'].astype('int32')
+df['movie_id'] = df['movie_id'].astype('int32')
+df['rating'] = df['rating'].astype('float32')
+```
+
+### ❓ Vấn đề: Kết quả khuyến nghị không đa dạng
+
+**Giải pháp:**
+```python
+# Tăng diversity bằng cách điều chỉnh trọng số
+recommender = HybridRecommender(
+    cf_weight=0.3,    # Giảm CF (ít personalized)
+    cbf_weight=0.5,   # Tăng CBF (đa dạng nội dung)
+    pop_weight=0.2
+)
+
+# Hoặc thêm re-ranking logic
+def diversity_reranking(recommendations, similarity_threshold=0.7):
+    """Remove highly similar movies from recommendations"""
+    # Implementation logic here
+    pass
+```
+
+### ❓ Vấn đề: Hiệu suất chậm trên Streamlit
+
+**Giải pháp:**
+```python
+# Sử dụng @st.cache để cache kết quả
+import streamlit as st
+
+@st.cache_resource
+def load_models():
+    """Load models once and cache them"""
+    # Load logic here
+    return recommender
+
+# Hoặc cache dữ liệu
+@st.cache_data
+def load_data():
+    return pd.read_csv('data/final_ratings_processed.csv')
+```
 
