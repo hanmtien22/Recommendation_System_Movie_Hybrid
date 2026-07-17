@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
 
-**Hệ thống khuyến nghị phim kết hợp (Hybrid) sử dụng các phương pháp lọc cộng tác, lọc dựa trên nội dung và xếp hạng phổ biến**
+**Hệ thống gợi ý phim Hybrid sử dụng các phương pháp lọc cộng tác, lọc dựa trên nội dung và xếp hạng phổ biến**
 
 [Tính năng](#-tính-năng-chính) • [Cài đặt](#-cài-đặt) • [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng) • [Kiến trúc](#-kiến-trúc-thuật-toán) • [Kết quả](#-kết-quả-thực-nghiệm)
 
